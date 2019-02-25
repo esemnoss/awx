@@ -71,7 +71,7 @@ def counts(since):
     counts['active_sessions'] = active_sessions
     counts['active_api_sessions'] = api_sessions
     counts['active_channels_sessions'] = channels_sessions
-    
+    counts['running_jobs'] = models.Job.objects.filter(status='running').count()
     return counts
     
     
@@ -119,4 +119,25 @@ def projects_by_scm_type(since):
         count=Count('scm_type')
     ).order_by('scm_type'):
         counts[result['scm_type'] or 'manual'] = result['count']
+    return counts
+
+
+@register('job_counts')   #TODO: evaluate if we want this (was not an ask)
+def job_counts(since):
+    counts = {}
+    counts['total_jobs'] = models.Job.objects.all().count()
+    for instance in models.Instance.objects.all():
+        counts[instance.id] = {'uuid': instance.uuid,
+                                'jobs_total': instance.jobs_total,       # this is _all_ jobs run by that node
+                                'jobs_running': instance.jobs_running,
+                                }
+    return counts
+    
+    
+    
+@register('jobs')
+def jobs(since):
+    counts = {}
+    jobs = models.Job.objects.filter(created__gt=since)
+    counts['latest_jobs'] = models.Job.objects.filter(created__gt=since).count()
     return counts
